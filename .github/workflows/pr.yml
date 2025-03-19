@@ -6,20 +6,19 @@ on:
 
 jobs:
   geth:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [linux/amd64]
+        settings:
+          - arch: linux/amd64
+            runs-on: ubuntu-24.04
+          - arch: linux/arm64
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.settings.runs-on }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: ${{ matrix.arch }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -30,15 +29,19 @@ jobs:
           context: .
           file: geth/Dockerfile
           push: false
-          platforms: ${{ matrix.arch }}
+          platforms: ${{ matrix.settings.arch }}
 
   reth:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
+        settings:
           - arch: linux/amd64
+            runs-on: ubuntu-24.04
             features: jemalloc,asm-keccak,optimism
+          - arch: linux/arm64
+            runs-on: ubuntu-24.04-arm
+            features: jemalloc,optimism
+    runs-on: ${{ matrix.settings.runs-on}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -53,14 +56,18 @@ jobs:
           file: reth/Dockerfile
           push: false
           build-args: |
-            FEATURES=${{ matrix.features }}
-          platforms: ${{ matrix.arch }}
+            FEATURES=${{ matrix.settings.features }}
+          platforms: ${{ matrix.settings.arch }}
 
   nethermind:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [linux/amd64]
+        settings:
+          - arch: linux/amd64
+            runs-on: ubuntu-24.04
+          - arch: linux/arm64
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.settings.runs-on}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -69,9 +76,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build the Docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: nethermind/Dockerfile
           push: false
-          platforms: ${{ matrix.arch }}
+          platforms: ${{ matrix.settings.arch }}
