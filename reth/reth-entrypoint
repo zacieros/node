@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eu
 
+IPC_PATH="/data/reth.ipc"
 RETH_DATA_DIR=/data
 RPC_PORT="${RPC_PORT:-8545}"
 WS_PORT="${WS_PORT:-8546}"
@@ -35,7 +36,7 @@ echo "$OP_NODE_L2_ENGINE_AUTH_RAW" > "$OP_NODE_L2_ENGINE_AUTH"
 exec $BINARY node \
   -vvv \
   --datadir="$RETH_DATA_DIR" \
-  --log.stdout.format log-fmt \
+  --log.stdout.format json \
   --ws \
   --ws.origins="*" \
   --ws.addr=0.0.0.0 \
@@ -45,11 +46,13 @@ exec $BINARY node \
   --http.corsdomain="*" \
   --http.addr=0.0.0.0 \
   --http.port="$RPC_PORT" \
-  --http.api=debug,eth,net,txpool \
+  --http.api=debug,eth,net,txpool,miner \
+  --ipcpath="$IPC_PATH" \
   --authrpc.addr=0.0.0.0 \
   --authrpc.port="$AUTHRPC_PORT" \
   --authrpc.jwtsecret="$OP_NODE_L2_ENGINE_AUTH" \
   --metrics=0.0.0.0:"$METRICS_PORT" \
+  --max-outbound-peers=100 \
   --chain "$RETH_CHAIN" \
   --rollup.sequencer-http=$RETH_SEQUENCER_HTTP \
   --rollup.disable-tx-pool-gossip \
