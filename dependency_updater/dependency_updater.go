@@ -116,16 +116,16 @@ func updater(token string, repoPath string, commit bool, githubAction bool) erro
 		}
 	}
 
+	e := createVersionsEnv(repoPath, dependencies)
+	if e != nil {
+		return fmt.Errorf("error creating versions.env: %s", e)
+	}
+
 	if (commit && updatedDependencies != nil) || (githubAction && updatedDependencies != nil) {
 		err := createCommitMessage(updatedDependencies, repoPath, githubAction)
 		if err != nil {
 			return fmt.Errorf("error creating commit message: %s", err)
 		}
-	}
-
-	e := createVersionsEnv(repoPath, dependencies)
-	if e != nil {
-		return fmt.Errorf("error creating versions.env: %s", e)
 	}
 
 	return nil
@@ -273,7 +273,7 @@ func updateVersionTagAndCommit(
 	dependencies Dependencies) error {
 	dependencies[dependencyType].Tag = tag
 	dependencies[dependencyType].Commit = commit
-	err := writeToVersionsEnv(repoPath, dependencies)
+	err := writeToVersionsJson(repoPath, dependencies)
 	if err != nil {
 		return fmt.Errorf("error writing to versions "+dependencyType+": %s", err)
 	}
@@ -281,7 +281,7 @@ func updateVersionTagAndCommit(
 	return nil
 }
 
-func writeToVersionsEnv(repoPath string, dependencies Dependencies) error {
+func writeToVersionsJson(repoPath string, dependencies Dependencies) error {
 	// formatting json
 	updatedJson, err := json.MarshalIndent(dependencies, "", "	  ")
 	print(dependencies["base_reth_node"].Branch)
