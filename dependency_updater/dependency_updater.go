@@ -164,7 +164,7 @@ func getAndUpdateDependency(ctx context.Context, client *github.Client, dependen
 	if err != nil {
 		return VersionUpdateInfo{}, err
 	}
-	if updatedDependency != (VersionUpdateInfo{}) || dependencies[dependencyType].Tracking == "branch" {
+	if updatedDependency != (VersionUpdateInfo{}) {
 		e := updateVersionTagAndCommit(commit, version, dependencyType, repoPath, dependencies)
 		if e != nil {
 			return VersionUpdateInfo{}, fmt.Errorf("error updating version tag and commit: %s", e)
@@ -256,6 +256,15 @@ func getVersionAndCommit(ctx context.Context, client *github.Client, dependencie
 			return "", "", VersionUpdateInfo{}, fmt.Errorf("error listing commits for "+dependencyType+": %s", err)
 		}
 		commit = *branchCommit[0].SHA
+		if dependencies[dependencyType].Commit != commit {
+			diff := dependencies[dependencyType].Commit + " => " + commit
+			updatedDependency = VersionUpdateInfo{
+				dependencies[dependencyType].Repo,
+				dependencies[dependencyType].Tag,
+				commit,
+				diff,
+			}
+		}
 	}
 
 	if version != nil {
@@ -332,17 +341,25 @@ func createVersionsEnv(repoPath string, dependencies Dependencies) error {
 }
 
 func createGitMessageEnv(title string, description string, repoPath string) error {
-	file, err := os.Create(repoPath + "/commit_message.env")
+	file := os.Getenv("GITHUB_OUTPUT")
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("error creating commit_message.env file: %s", err)
+		return fmt.Errorf("error failed to open GITHUB_OUTPUT file: %s", err)
 	}
-	defer file.Close()
+	defer f.Close()
 
-	envString := "export TITLE=" + title + "\nexport DESC=" + description
-	_, err = file.WriteString(envString)
+	titleToWrite := fmt.Sprintf("%s=%s\n", "TITLE", title)
+	_, err = f.WriteString(titleToWrite)
 	if err != nil {
-		return fmt.Errorf("error writing to commit_message.env file: %s", err)
+		return fmt.Errorf("error failed to write to GITHUB_OUTPUT file: %s", err)
 	}
+
+	descToWrite := fmt.Sprintf("%s=%s\n", "DESC", description)
+	_, err = f.WriteString(descToWrite)
+	if err != nil {
+		return fmt.Errorf("error failed to write to GITHUB_OUTPUT file: %s", err)
+	}
+
 	return nil
 }
 
