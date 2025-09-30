@@ -264,6 +264,8 @@ func getVersionAndCommit(ctx context.Context, client *github.Client, dependencie
 				diff,
 			}
 		}
+		// For branch tracking, return branch name as the tag
+		return dependencies[dependencyType].Branch, commit, updatedDependency, nil
 	}
 
 	if version != nil {
