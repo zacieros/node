@@ -143,7 +143,7 @@ func createCommitMessage(updatedDependencies []VersionUpdateInfo, repoPath strin
 	}
 	commitDescription = strings.TrimSuffix(commitDescription, " ")
 	commitTitle += strings.Join(repos, ", ")
-	
+
 	if githubAction {
 		err := writeToGithubOutput(commitTitle, commitDescription, repoPath)
 		if err != nil {
@@ -264,8 +264,6 @@ func getVersionAndCommit(ctx context.Context, client *github.Client, dependencie
 				diff,
 			}
 		}
-		// For branch tracking, return branch name as the tag
-		return dependencies[dependencyType].Branch, commit, updatedDependency, nil
 	}
 
 	if version != nil {
@@ -313,6 +311,10 @@ func createVersionsEnv(repoPath string, dependencies Dependencies) error {
 		repoUrl := generateGithubRepoUrl(dependencies, dependency) + ".git"
 
 		dependencyPrefix := strings.ToUpper(dependency)
+
+		if dependencies[dependency].Tracking == "branch" {
+			dependencies[dependency].Tag = dependencies[dependency].Branch
+		}
 
 		envLines = append(envLines, fmt.Sprintf("export %s_%s=%s",
 			dependencyPrefix, "TAG", dependencies[dependency].Tag))
